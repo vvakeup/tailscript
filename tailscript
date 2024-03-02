@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+
+APPDIR=/home/$SUDO_USER/apps
+
+if ! [ $(id -u) = 0 ]; then
+	echo "Root needed" >&2
+	exit 1
+fi
+
+
+if ! [ -d $APPDIR ]; then
+	mkdir $APPDIR
+fi
+
+declare -A programs=(
+	#["atomic"]="https://releases.atomicwallet.io/AtomicWallet-2.76.10.AppImage"
+	["proxychains"]="https://github.com/haad/proxychains/archive/refs/tags/4.3.0.tar.gz"
+)
+
+for app in "${!programs[@]}";
+do
+	echo downloading $app - ${programs[$app]};
+	wget ${programs[$app]} -O $APPDIR/$(basename "${programs[$app]}")
+done
+
+
+proxychains_tarfile=$APPDIR/$(basename "${programs[proxychains]}")
+echo test "$proxychains_tarfile"
+tar -C $APPDIR -xvzf "$proxychains_tarfile"
+
+proxychains=$(basename "${programs[proxychains]}" .tar.gz)
+$APPDIR/*$proxychains/configure
+cd $APPDIR/*$proxychains && make
+
+
+chown -R $SUDO_USER:$SUDO_USER $APPDIR
+#chmod +x $APPDIR/*.AppImage
